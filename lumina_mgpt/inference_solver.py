@@ -6,7 +6,11 @@ from typing import List, Optional, Union
 import torch
 import transformers
 from PIL import Image
-from transformers import GenerationConfig, TextStreamer
+from transformers import (
+    # ChameleonForConditionalGeneration,
+    GenerationConfig,
+    TextStreamer,
+)
 from transformers.generation.logits_process import (
     LogitsProcessor,
     LogitsProcessorList,
@@ -325,6 +329,8 @@ class FlexARInferenceSolver:
             model_path,
             torch_dtype=self.dtype,
             device_map="cuda",
+            attn_implementation="flash_attention_2",
+            use_cache=True,
         )
         self.item_processor = FlexARItemProcessor(target_size=target_size)
 
@@ -381,7 +387,7 @@ class FlexARInferenceSolver:
         if logits_processor is None:
             logits_processor = self.create_logits_processor()
 
-        with torch.cuda.amp.autocast(dtype=self.dtype):
+        with torch.amp.autocast(device_type="cuda", dtype=self.dtype):
             generation_result = self.model.generate(
                 prompt,
                 generation_config,

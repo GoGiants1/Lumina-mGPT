@@ -5,8 +5,9 @@ from typing import List
 
 import torch
 from torch import nn
-from transformers import ChameleonForConditionalGeneration
 
+# from transformers import ChameleonForConditionalGeneration
+from ..model.chameleon import ChameleonForConditionalGeneration
 from .configuration_xllmx_chameleon import ChameleonXLLMXConfig
 
 logger = logging.getLogger(__name__)
