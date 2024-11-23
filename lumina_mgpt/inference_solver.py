@@ -231,7 +231,7 @@ class MultiModalLogitsProcessor(LogitsProcessor):
                     new_line_constrained_scores[:, self.image_next_line_token_id] = 0
                     print(f"new line: {len(tokens)+1}")
                     # I want to measure the GPU memory usage
-                    print(torch.cuda.memory_summary())
+                    # print(torch.cuda.memory_summary())
                     return new_line_constrained_scores
                 elif (len(tokens) + 1) == (
                     self.w_latent_dim + 1

@@ -5,8 +5,8 @@ from typing import List
 
 import torch
 from torch import nn
+from transformers import ChameleonForConditionalGeneration
 
-from .chameleon import ChameleonForConditionalGeneration
 from .configuration_xllmx_chameleon import ChameleonXLLMXConfig
 
 logger = logging.getLogger(__name__)
@@ -24,13 +24,14 @@ class ChameleonXLLMXForConditionalGeneration(ChameleonForConditionalGeneration):
         super().__init__(config)
 
     def forward(self, input_ids=None, labels=None, training=True, **kwargs):
-
         max_tokens = max([len(_) for _ in input_ids])
         max_tokens = min(max_tokens, self.config.max_position_embeddings)
         input_ids = [_[:max_tokens] for _ in input_ids]
         labels = [_[:max_tokens] for _ in labels]
 
-        input_ids = [example + [0] * (max_tokens - len(example)) for example in input_ids]
+        input_ids = [
+            example + [0] * (max_tokens - len(example)) for example in input_ids
+        ]
         input_ids = torch.tensor(input_ids, dtype=torch.int64, device=self.device)
 
         labels = [label + [-100] * (max_tokens - len(label)) for label in labels]
