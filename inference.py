@@ -1,9 +1,11 @@
 import os
 from datetime import datetime
 
-from PIL import Image
-
 from lumina_mgpt.inference_solver import FlexARInferenceSolver
+from PIL import Image
+from xllmx.util.misc import random_seed
+
+random_seed(0)
 
 # ******************** Image Generation ********************
 inference_solver = FlexARInferenceSolver(
