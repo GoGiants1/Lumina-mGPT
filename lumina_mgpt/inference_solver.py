@@ -234,8 +234,6 @@ class MultiModalLogitsProcessor(LogitsProcessor):
                     new_line_constrained_scores = torch.full_like(scores, -math.inf)
                     new_line_constrained_scores[:, self.image_next_line_token_id] = 0
                     print(f"new line: {len(tokens)+1}")
-                    # I want to measure the GPU memory usage
-                    # print(torch.cuda.memory_summary())
                     return new_line_constrained_scores
                 elif (len(tokens) + 1) == (
                     self.w_latent_dim + 1
@@ -349,6 +347,68 @@ class FlexARInferenceSolver:
     ):
         conversations = []
         for q, a in qas:
+            conversations.append(
+                {
+                    "from": "human",
+                    "value": q,
+                }
+            )
+            conversations.append(
+                {
+                    "from": "gpt",
+                    "value": a,
+                }
+            )
+        item = {"image": images, "conversations": conversations}
+
+        _prompt = self.item_processor.process_item(item)
+        prompt = []
+        for value in _prompt:
+            if isinstance(value, int):
+                prompt.append(value)
+            else:
+                prompt += value["input_ids"]
+        prompt_len = len(prompt)
+        prompt = torch.tensor(
+            prompt, dtype=torch.int64, device=self.model.device
+        ).unsqueeze(0)
+
+        generation_config = GenerationConfig(
+            max_new_tokens=max_gen_len,
+            max_length=self.model.config.max_position_embeddings,
+            temperature=temperature,
+            top_k=None,
+            do_sample=True,
+            eos_token_id=[8710],
+        )
+
+        if logits_processor is None:
+            logits_processor = self.create_logits_processor()
+
+        with torch.amp.autocast(device_type="cuda", dtype=self.dtype):
+            generation_result = self.model.generate(
+                prompt,
+                generation_config,
+                logits_processor=logits_processor,
+                streamer=streamer,
+            )[0][prompt_len:].tolist()
+            if len(generation_result) > 0 and generation_result[-1] == 8710:
+                generation_result = generation_result[:-1]
+
+        return self.decode_ids(generation_result)
+
+    @torch.no_grad()
+    def generate_few_shots(
+        self,
+        images: Image.Image | str | List[Union[Image.Image, str]],
+        qas,
+        max_gen_len,
+        temperature,
+        logits_processor=None,
+        streamer=None,
+    ):
+        conversations = []
+        for i, (q, a) in enumerate(qas):
             conversations.append(
                 {
                     "from": "human",
